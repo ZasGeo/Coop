@@ -69,6 +69,7 @@ protected:
 
 	float DefaultFOV;
 
+	UPROPERTY(Replicated)
 	class ACHWeapon* CurrentWeapon;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Player")
@@ -78,7 +79,7 @@ protected:
 	FName WeaponAttachSocket = "WeaponSocket";
 	
 
-	UPROPERTY(BlueprintReadOnly, Category = "Player")
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Player")
 	bool bIsDied;
 
 };

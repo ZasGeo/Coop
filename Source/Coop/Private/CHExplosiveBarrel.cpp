@@ -7,28 +7,34 @@
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
+#include "UnrealNetwork.h"
 
 // Sets default values
 ACHExplosiveBarrel::ACHExplosiveBarrel()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
+	
 
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MESH"));
 	MeshComp->SetCollisionProfileName("PhysicsActor");
 	MeshComp->SetSimulatePhysics(true);
+	
 	RootComponent = MeshComp;
 
 	RadialForceComp = CreateDefaultSubobject<URadialForceComponent>(TEXT("ForceComp"));
 	RadialForceComp->AddCollisionChannelToAffect(ECollisionChannel::ECC_PhysicsBody);
 	RadialForceComp->AddCollisionChannelToAffect(ECollisionChannel::ECC_Destructible);
 	RadialForceComp->SetupAttachment(RootComponent);
+	RadialForceComp->SetAutoActivate(false);
 
 	HealthComp = CreateDefaultSubobject<UCHHealthComponent>(TEXT("HealthCOmp"));
 
 	HealthComp->OnChangeHealth.AddDynamic(this, &ACHExplosiveBarrel::OnHealthChanged);
 		
-
+	SetReplicates(true);
+	SetReplicateMovement(true);
+	MeshComp->SetIsReplicated(true);
 }
 
 
@@ -42,15 +48,16 @@ void ACHExplosiveBarrel::OnHealthChanged(UCHHealthComponent* HealthComponent, fl
 
 		if (MeshComp)
 		{
-			if (DestroyedMaterial)
-			{
-				MeshComp->SetMaterial(0, DestroyedMaterial);
-			}
 			
+
+			bIsDestroyed = true;
+			
+			PlayDestroyEffects();
+
 			MeshComp->AddImpulse(GetActorUpVector() * 100000.0f);
 		}
 
-		UGameplayStatics::SpawnEmitterAtLocation(this, ExplosionEffect, GetActorLocation());
+		
 
 		TArray<AActor*> IgnoredActors;
 		IgnoredActors.Add(this);
@@ -59,4 +66,27 @@ void ACHExplosiveBarrel::OnHealthChanged(UCHHealthComponent* HealthComponent, fl
 		RadialForceComp->FireImpulse();
 
 	}
+}
+
+void ACHExplosiveBarrel::PlayDestroyEffects()
+{
+	if (DestroyedMaterial && bIsDestroyed)
+	{
+		MeshComp->SetMaterial(0, DestroyedMaterial);
+	}
+
+	UGameplayStatics::SpawnEmitterAtLocation(this, ExplosionEffect, GetActorLocation());
+}
+
+void ACHExplosiveBarrel::OnRep_DestroyEffects()
+{
+	PlayDestroyEffects();
+}
+
+void ACHExplosiveBarrel::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ACHExplosiveBarrel, bIsDestroyed);
+	
 }

@@ -20,6 +20,8 @@ protected:
 	UFUNCTION()
 	void OnHealthChanged(class UCHHealthComponent* HealthComponent, float Health, float DeltaHealth, const class UDamageType* CausedDamageType, class AController* InstigatedBy, AActor* DamageCauser);
 
+	void PlayDestroyEffects();
+
 protected:	
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -39,4 +41,13 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay")
 	TSubclassOf<UDamageType> DamageType;
+
+	UPROPERTY(ReplicatedUsing = OnRep_DestroyEffects)
+	bool bIsDestroyed = false;
+
+protected:
+
+	UFUNCTION()
+	void OnRep_DestroyEffects();
+
 };

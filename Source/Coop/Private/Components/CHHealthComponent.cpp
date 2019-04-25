@@ -3,6 +3,7 @@
 
 #include "CHHealthComponent.h"
 #include "GameFramework/DamageType.h"
+#include "UnrealNetwork.h"
 
 // Sets default values for this component's properties
 UCHHealthComponent::UCHHealthComponent()
@@ -11,6 +12,7 @@ UCHHealthComponent::UCHHealthComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
 
+	SetIsReplicated(true);
 	// ...
 }
 
@@ -21,12 +23,15 @@ void UCHHealthComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-	
-	AActor* MyOwner = GetOwner();
-	if (MyOwner)
+	if (GetOwnerRole() == ROLE_Authority)
 	{
-		MyOwner->OnTakeAnyDamage.AddDynamic(this, &UCHHealthComponent::OnDamageTaken);
+		AActor* MyOwner = GetOwner();
+		if (MyOwner)
+		{
+			MyOwner->OnTakeAnyDamage.AddDynamic(this, &UCHHealthComponent::OnDamageTaken);
+		}
 	}
+	
 
 	Health = Defaulthealth;
 }
@@ -47,3 +52,9 @@ void UCHHealthComponent::OnDamageTaken(AActor* DamagedActor, float Damage, const
 
 
 
+void UCHHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UCHHealthComponent, Health);
+}

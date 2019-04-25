@@ -10,6 +10,7 @@
 #include "Coop.h"
 #include "CHWeapon.h"
 #include "CHHealthComponent.h"
+#include "UnrealNetwork.h"
 
 // Sets default values
 ACHCharacter::ACHCharacter()
@@ -42,18 +43,22 @@ void ACHCharacter::BeginPlay()
 
 	DefaultFOV = CameraComp->FieldOfView;
 	
-	FActorSpawnParameters SpawnParams;
-
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	SpawnParams.Owner = this;
-	SpawnParams.Instigator = this;
-
-	CurrentWeapon = GetWorld()->SpawnActor<ACHWeapon>(StartWeaponClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-
-	if (CurrentWeapon)
+	if (Role == ROLE_Authority)
 	{
-		CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponAttachSocket);
+		FActorSpawnParameters SpawnParams;
+
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParams.Owner = this;
+		SpawnParams.Instigator = this;
+
+		CurrentWeapon = GetWorld()->SpawnActor<ACHWeapon>(StartWeaponClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+
+		if (CurrentWeapon)
+		{
+			CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponAttachSocket);
+		}
 	}
+	
 
 }
 
@@ -165,3 +170,10 @@ FVector ACHCharacter::GetPawnViewLocation() const
 	return Super::GetPawnViewLocation();
 }
 
+void ACHCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ACHCharacter, CurrentWeapon);
+	DOREPLIFETIME(ACHCharacter, bIsDied);
+}

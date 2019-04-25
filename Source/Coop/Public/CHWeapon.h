@@ -6,6 +6,22 @@
 #include "GameFramework/Actor.h"
 #include "CHWeapon.generated.h"
 
+
+
+USTRUCT()
+struct FHitScanTrace{
+	GENERATED_BODY()
+
+public:
+
+	UPROPERTY()
+	TEnumAsByte<EPhysicalSurface> SurfaceType;
+
+
+	UPROPERTY()
+	FVector_NetQuantize TraceTo;
+};
+
 UCLASS()
 class COOP_API ACHWeapon : public AActor
 {
@@ -31,7 +47,12 @@ protected:
 
 	void PlayFireEffect(const FVector& TracePoint);
 
+	void PlayImpactEffect(EPhysicalSurface SurfaceType, const FVector& ImpactPoint);
+
 	virtual void Fire();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerFire();
 
 	void Reload();
 
@@ -90,5 +111,17 @@ protected:
 	float ReloadTime = 5.0f;
 
 	FTimerHandle Reload_Timer;
+
+
+	UPROPERTY(ReplicatedUsing = OnRep_HitScanTrace)
+	FHitScanTrace HitScanTrace;
+
+
+//Networking functions
+protected:
+
+	UFUNCTION()
+	void OnRep_HitScanTrace();
+
 
 };

@@ -29,7 +29,7 @@ protected:
 
 protected:
 
-	UPROPERTY(BlueprintReadOnly, Category = "Heath")
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Heath")
 	float Health = 100.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Heath")

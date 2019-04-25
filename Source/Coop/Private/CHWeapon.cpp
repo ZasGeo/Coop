@@ -9,6 +9,7 @@
 #include "Engine/EngineTypes.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "Coop.h"
+#include "UnrealNetwork.h"
 
 static int32 DebugWeaponDrawing;
 
@@ -25,6 +26,10 @@ ACHWeapon::ACHWeapon()
 
 	MuzzleSocketName = "MuzzleSocket";
 	TraceTargetName = "Target";
+
+	SetReplicates(true);
+	NetUpdateFrequency = 66.6f;
+	MinNetUpdateFrequency = 33.3f;
 }
 
 void ACHWeapon::BeginPlay()
@@ -58,6 +63,11 @@ void ACHWeapon::StartReload()
 
 void ACHWeapon::Fire()
 {
+	if (Role < ROLE_Authority)
+	{
+		ServerFire();
+	}
+
 	AActor* MyOwner = GetOwner();
 
 	if (MyOwner && !bIsReloading)
@@ -86,13 +96,14 @@ void ACHWeapon::Fire()
 
 		FVector TracePoint = TraceEnd;
 
-		FHitResult Hit;
+		FHitResult Hit; 
+		EPhysicalSurface SurfaceType = SurfaceType_Default;
 
 		if (GetWorld()->LineTraceSingleByChannel(Hit, EyeLocation, TraceEnd, ECollisionChannel::COLLISION_WEAPON, QueryParams))
 		{
 			AActor* HitActor = Hit.GetActor();
 
-			EPhysicalSurface SurfaceType = UPhysicalMaterial::DetermineSurfaceType(Hit.PhysMaterial.Get());
+			SurfaceType  = UPhysicalMaterial::DetermineSurfaceType(Hit.PhysMaterial.Get());
 
 			float ActualDamage = BaseDamage;
 
@@ -103,25 +114,10 @@ void ACHWeapon::Fire()
 
 			UGameplayStatics::ApplyPointDamage(HitActor, ActualDamage, ShotDirection, Hit, MyOwner->GetInstigatorController(), this, DamageType);
 			
-			UParticleSystem* SelectedEffect = nullptr;
-
-			switch (SurfaceType)
-			{
-			case SURFACE_FLESH_DEFAULT:
-				SelectedEffect = FleshImpactEffect;
-				break;
-			case SURFACE_FLESH_VULNERABLE:
-				SelectedEffect = FleshImpactEffect;
-				break;
-			default:
-				SelectedEffect = DefaultImpactEffect;
-				break;
-			}
-
-			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SelectedEffect, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
-
+			
 			TracePoint = Hit.ImpactPoint;
 
+			PlayImpactEffect(SurfaceType, TracePoint);
 		}
 
 
@@ -135,6 +131,12 @@ void ACHWeapon::Fire()
 	
 		PlayFireEffect(TracePoint);
 
+		if (Role == ROLE_Authority)
+		{
+			HitScanTrace.TraceTo = TracePoint;
+			HitScanTrace.SurfaceType = SurfaceType;
+		}
+
 		LastFireTime = GetWorld()->TimeSeconds;
 
 		CurrentAmmo -= 1.0f;
@@ -145,11 +147,28 @@ void ACHWeapon::Fire()
 
 
 
+void ACHWeapon::ServerFire_Implementation()
+{
+	Fire();
+}
+
+bool ACHWeapon::ServerFire_Validate()
+{
+	return true;
+}
+
 void ACHWeapon::Reload()
 {
 	bIsReloading = false;
 	CurrentAmmo = MaxAmmo;
 	GetWorldTimerManager().ClearTimer(Reload_Timer);
+}
+
+void ACHWeapon::OnRep_HitScanTrace()
+{
+	
+	PlayFireEffect(HitScanTrace.TraceTo);
+	PlayImpactEffect(HitScanTrace.SurfaceType, HitScanTrace.TraceTo);
 }
 
 void ACHWeapon::PlayFireEffect(const FVector& TracePoint)
@@ -174,6 +193,46 @@ void ACHWeapon::PlayFireEffect(const FVector& TracePoint)
 			PC->ClientPlayCameraShake(FireCamShake);
 		}
 	}
+
+	UE_LOG(LogTemp, Log, TEXT("ImpactPoint 0 X %s"), *FString::SanitizeFloat(TracePoint.X));
+	UE_LOG(LogTemp, Log, TEXT("ImpactPoint 0 Y %s"), *FString::SanitizeFloat(TracePoint.Y));
+	UE_LOG(LogTemp, Log, TEXT("ImpactPoint 0 Z %s"), *FString::SanitizeFloat(TracePoint.Z));
 }
 
 
+void ACHWeapon::PlayImpactEffect(EPhysicalSurface SurfaceType, const FVector& ImpactPoint)
+{
+	UParticleSystem* SelectedEffect = nullptr;
+
+	switch (SurfaceType)
+	{
+	case SURFACE_FLESH_DEFAULT:
+		SelectedEffect = FleshImpactEffect;
+		break;
+	case SURFACE_FLESH_VULNERABLE:
+		SelectedEffect = FleshImpactEffect;
+		break;
+	default:
+		SelectedEffect = DefaultImpactEffect;
+		break;
+	}
+	FVector MuzzleLoc = MeshComp->GetSocketLocation(MuzzleSocketName);
+	FVector ShotDir = ImpactPoint - MuzzleLoc;
+	ShotDir.Normalize();
+
+	
+	UE_LOG(LogTemp, Log, TEXT("ImpactPoint 1 X %s"), *FString::SanitizeFloat(ImpactPoint.X));
+	UE_LOG(LogTemp, Log, TEXT("ImpactPoint 1 Y %s"), *FString::SanitizeFloat(ImpactPoint.Y));
+	UE_LOG(LogTemp, Log, TEXT("ImpactPoint 1 Z %s"), *FString::SanitizeFloat(ImpactPoint.Z));
+
+	//UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SelectedEffect, ImpactPoint, ShotDir.Rotation());
+	//UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SelectedEffect, GetActorLocation()+FVector(10.0f, 10.0f, 100.0f));
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SelectedEffect, ImpactPoint);
+}
+
+void ACHWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION(ACHWeapon, HitScanTrace, COND_SkipOwner);
+}
