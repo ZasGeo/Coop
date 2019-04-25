@@ -3,16 +3,21 @@
 
 #include "CHCharacter.h"
 #include "Components/InputComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
+#include "Coop.h"
 #include "CHWeapon.h"
+#include "CHHealthComponent.h"
 
 // Sets default values
 ACHCharacter::ACHCharacter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::COLLISION_WEAPON, ECollisionResponse::ECR_Ignore);
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->bUsePawnControlRotation = true;
@@ -21,6 +26,10 @@ ACHCharacter::ACHCharacter()
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraCom"));
 	CameraComp->SetupAttachment(SpringArm);
 	
+	HealthComp = CreateDefaultSubobject<UCHHealthComponent>(TEXT("HealthComp"));
+
+	HealthComp->OnChangeHealth.AddDynamic(this, &ACHCharacter::OnHealthChanged);
+
 	GetMovementComponent()->GetNavAgentPropertiesRef().bCanCrouch = true;
 	
 	
@@ -91,6 +100,22 @@ void ACHCharacter::StopFire()
 	if (CurrentWeapon)
 	{
 		CurrentWeapon->StopFire();
+	}
+}
+
+void ACHCharacter::OnHealthChanged(UCHHealthComponent* HealthComponent, float Health, float DeltaHealth, const UDamageType* DamageType,AController* InstigatedBy, AActor* DamageCauser)
+{
+	if (Health <= 0.0f && !bIsDied)
+	{
+		bIsDied = true;
+
+		GetMovementComponent()->StopMovementImmediately();
+
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		DetachFromControllerPendingDestroy();
+
+		SetLifeSpan(10.0f);
 	}
 }
 

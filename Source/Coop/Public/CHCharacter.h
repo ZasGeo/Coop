@@ -35,6 +35,10 @@ protected:
 
 	void StopFire();
 
+	UFUNCTION()
+	void OnHealthChanged(class UCHHealthComponent* HealthComponent, float Health, float DeltaHealth,
+		const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -51,6 +55,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UCameraComponent* CameraComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UCHHealthComponent* HealthComp;
 
 	bool bWantsToZoom;
 
@@ -70,4 +77,8 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, Category = "Player")
 	FName WeaponAttachSocket = "WeaponSocket";
 	
+
+	UPROPERTY(BlueprintReadOnly, Category = "Player")
+	bool bIsDied;
+
 };
