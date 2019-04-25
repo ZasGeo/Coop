@@ -27,6 +27,14 @@ protected:
 
 	void EndCrouch();
 
+	void BeginZoom();
+
+	void EndZoom();
+
+	void StartFire();
+
+	void StopFire();
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -44,5 +52,22 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UCameraComponent* CameraComp;
 
+	bool bWantsToZoom;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Player")
+	float ZoomedFOV = 65.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Player", meta = (ClampMin = 0.1, ClampMax = 100.0))
+	float  ZoomInterpSpeed = 20.0f;
+
+	float DefaultFOV;
+
+	class ACHWeapon* CurrentWeapon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Player")
+	TSubclassOf<ACHWeapon> StartWeaponClass;
+
+	UPROPERTY(VisibleDefaultsOnly, Category = "Player")
+	FName WeaponAttachSocket = "WeaponSocket";
 	
 };

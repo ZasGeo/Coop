@@ -6,6 +6,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
+#include "CHWeapon.h"
 
 // Sets default values
 ACHCharacter::ACHCharacter()
@@ -22,14 +23,29 @@ ACHCharacter::ACHCharacter()
 	
 	GetMovementComponent()->GetNavAgentPropertiesRef().bCanCrouch = true;
 	
-
+	
 }
 
 // Called when the game starts or when spawned
 void ACHCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	DefaultFOV = CameraComp->FieldOfView;
 	
+	FActorSpawnParameters SpawnParams;
+
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = this;
+
+	CurrentWeapon = GetWorld()->SpawnActor<ACHWeapon>(StartWeaponClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponAttachSocket);
+	}
+
 }
 
 void ACHCharacter::MoveForward(float AxisValue)
@@ -52,10 +68,42 @@ void ACHCharacter::EndCrouch()
 	UnCrouch();
 }
 
+void ACHCharacter::BeginZoom()
+{
+	bWantsToZoom = true;
+}
+
+void ACHCharacter::EndZoom()
+{
+	bWantsToZoom = false;
+}
+
+void ACHCharacter::StartFire()
+{
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->StartFire();
+	}
+}
+
+void ACHCharacter::StopFire()
+{
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->StopFire();
+	}
+}
+
 // Called every frame
 void ACHCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	float TargetFOV = bWantsToZoom ? ZoomedFOV : DefaultFOV;
+
+	float NewFOV = FMath::FInterpTo(CameraComp->FieldOfView, TargetFOV, DeltaTime, ZoomInterpSpeed);
+
+	CameraComp->SetFieldOfView(NewFOV);
 
 }
 
@@ -74,6 +122,12 @@ void ACHCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &ACHCharacter::EndCrouch);
 
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACHCharacter::Jump);
+
+	PlayerInputComponent->BindAction("Zoom", IE_Pressed, this, &ACHCharacter::BeginZoom);
+	PlayerInputComponent->BindAction("Zoom", IE_Released, this, &ACHCharacter::EndZoom);
+
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ACHCharacter::StartFire);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ACHCharacter::StopFire);
 }
 
 FVector ACHCharacter::GetPawnViewLocation() const
