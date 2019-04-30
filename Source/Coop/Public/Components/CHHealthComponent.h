@@ -25,11 +25,12 @@ protected:
 	UFUNCTION()
 	void OnDamageTaken(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 
-
+	UFUNCTION()
+	void OnRep_Health(float OldHealth);
 
 protected:
 
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Heath")
+	UPROPERTY(ReplicatedUsing = OnRep_Health, BlueprintReadOnly, Category = "Heath")
 	float Health = 100.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Heath")
