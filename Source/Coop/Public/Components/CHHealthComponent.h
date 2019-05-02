@@ -18,6 +18,9 @@ public:
 	// Sets default values for this component's properties
 	UCHHealthComponent();
 
+	UFUNCTION(BlueprintCallable, Category = "Events")
+	void Heal(float Amount);
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;

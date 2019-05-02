@@ -17,6 +17,20 @@ UCHHealthComponent::UCHHealthComponent()
 }
 
 
+void UCHHealthComponent::Heal(float Amount)
+{
+	if (Amount <= 0.0f || Health <= 0.0f)
+	{
+		return;
+	}
+
+	Health = FMath::Clamp(Health + Amount, 0.0f, Defaulthealth);
+
+	UE_LOG(LogTemp, Log, TEXT("Health changed %s (+%s)"), *FString::SanitizeFloat(Health), *FString::SanitizeFloat(Amount));
+
+	OnChangeHealth.Broadcast(this, Health, -Amount, nullptr, nullptr, nullptr);
+}
+
 // Called when the game starts
 void UCHHealthComponent::BeginPlay()
 {
@@ -45,7 +59,7 @@ void UCHHealthComponent::OnDamageTaken(AActor* DamagedActor, float Damage, const
 
 	Health = FMath::Clamp(Health - Damage, 0.0f, Defaulthealth);
 
-	//UE_LOG(LogTemp, Log, TEXT("Health changed %s"), *FString::SanitizeFloat(Health));
+	UE_LOG(LogTemp, Log, TEXT("Health changed %s"), *FString::SanitizeFloat(Health));
 
 	OnChangeHealth.Broadcast(this, Health, Damage, DamageType, InstigatedBy, DamageCauser);
 }

@@ -178,6 +178,8 @@ void ACHTrackingBot::Tick(float DeltaTime)
 
 void ACHTrackingBot::NotifyActorBeginOverlap(AActor* OtherActor)
 {
+	Super::NotifyActorBeginOverlap(OtherActor);
+
 	if (bStartedSelfDestruction && bExplode)
 	{
 		return;
