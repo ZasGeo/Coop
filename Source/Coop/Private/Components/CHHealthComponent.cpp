@@ -4,6 +4,7 @@
 #include "CHHealthComponent.h"
 #include "GameFramework/DamageType.h"
 #include "UnrealNetwork.h"
+#include "CHGameMode.h"
 
 // Sets default values for this component's properties
 UCHHealthComponent::UCHHealthComponent()
@@ -52,16 +53,29 @@ void UCHHealthComponent::BeginPlay()
 
 void UCHHealthComponent::OnDamageTaken(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
 {
-	if (Damage <= 0.0f)
+	if (Damage <= 0.0f || bIsDead)
 	{
 		return;
 	}
 
 	Health = FMath::Clamp(Health - Damage, 0.0f, Defaulthealth);
 
+	bIsDead = Health <= 0.0f;
+
 	UE_LOG(LogTemp, Log, TEXT("Health changed %s"), *FString::SanitizeFloat(Health));
 
 	OnChangeHealth.Broadcast(this, Health, Damage, DamageType, InstigatedBy, DamageCauser);
+
+
+	if (bIsDead)
+	{
+		ACHGameMode* GM = Cast<ACHGameMode>(GetWorld()->GetAuthGameMode());
+		if (GM)
+		{
+			GM->OnActorKilled.Broadcast(GetOwner(), DamageCauser, InstigatedBy);
+		}
+	}
+	
 }
 
 

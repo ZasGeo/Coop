@@ -194,9 +194,7 @@ void ACHWeapon::PlayFireEffect(const FVector& TracePoint)
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("ImpactPoint 0 X %s"), *FString::SanitizeFloat(TracePoint.X));
-	UE_LOG(LogTemp, Log, TEXT("ImpactPoint 0 Y %s"), *FString::SanitizeFloat(TracePoint.Y));
-	UE_LOG(LogTemp, Log, TEXT("ImpactPoint 0 Z %s"), *FString::SanitizeFloat(TracePoint.Z));
+	
 }
 
 
@@ -221,12 +219,6 @@ void ACHWeapon::PlayImpactEffect(EPhysicalSurface SurfaceType, const FVector& Im
 	ShotDir.Normalize();
 
 	
-	UE_LOG(LogTemp, Log, TEXT("ImpactPoint 1 X %s"), *FString::SanitizeFloat(ImpactPoint.X));
-	UE_LOG(LogTemp, Log, TEXT("ImpactPoint 1 Y %s"), *FString::SanitizeFloat(ImpactPoint.Y));
-	UE_LOG(LogTemp, Log, TEXT("ImpactPoint 1 Z %s"), *FString::SanitizeFloat(ImpactPoint.Z));
-
-	//UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SelectedEffect, ImpactPoint, ShotDir.Rotation());
-	//UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SelectedEffect, GetActorLocation()+FVector(10.0f, 10.0f, 100.0f));
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SelectedEffect, ImpactPoint);
 }
 

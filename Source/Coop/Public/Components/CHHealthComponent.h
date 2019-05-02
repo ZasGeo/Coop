@@ -21,6 +21,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Events")
 	void Heal(float Amount);
 
+	float GetHealth() const 
+	{
+		return Health;
+	}
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -38,6 +43,8 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Heath")
 	float Defaulthealth = 100.f;
+
+	bool bIsDead = false;
 
 public:
 
