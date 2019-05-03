@@ -14,6 +14,10 @@
 #include "Sound/SoundCue.h"
 #include "UnrealNetwork.h"
 
+static int32 DebugTrackerDrawing = 0;
+
+FAutoConsoleVariableRef CVARDebugTrackerDrawing(TEXT("COOP.DebugTrackerBot"), DebugTrackerDrawing, TEXT("Draw debug lines for TrackerBot"), ECVF_Cheat);
+
 // Sets default values
 ACHTrackingBot::ACHTrackingBot()
 {
@@ -59,11 +63,37 @@ void ACHTrackingBot::BeginPlay()
 
 FVector ACHTrackingBot::GetNexPathPoint()
 {
-	ACharacter* MyChar = UGameplayStatics::GetPlayerCharacter(this, 0);
+	AActor* BestTarget = nullptr;
+	float NearestTargetDistance = FLT_MAX;
 
-	if (MyChar)
+	for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
 	{
-		UNavigationPath* NavPath = UNavigationSystemV1::FindPathToActorSynchronously(this, GetActorLocation(), MyChar);
+		APawn* TestPawn = It->Get();
+		if (TestPawn == nullptr || UCHHealthComponent::IsFrendly(this, TestPawn))
+		{
+			continue;
+		}
+
+		UCHHealthComponent* OtherHealthComp = Cast<UCHHealthComponent>(TestPawn->GetComponentByClass(UCHHealthComponent::StaticClass()));
+
+		if (OtherHealthComp && OtherHealthComp->GetHealth() > 0.0f)
+		{
+			float Distance = (GetActorLocation() - TestPawn->GetActorLocation()).Size();
+			if (Distance < NearestTargetDistance)
+			{
+				NearestTargetDistance = Distance;
+				BestTarget = TestPawn;
+			}
+		}
+	}
+
+	if (BestTarget)
+	{
+		UNavigationPath* NavPath = UNavigationSystemV1::FindPathToActorSynchronously(this, GetActorLocation(), BestTarget);
+
+		GetWorldTimerManager().ClearTimer(TimerHandle_PassTimer);
+
+		GetWorldTimerManager().SetTimer(TimerHandle_PassTimer, this, &ACHTrackingBot::RefreshPass, 5.0f, false);
 
 		if (NavPath->PathPoints.Num() > 1)
 		{
@@ -91,9 +121,6 @@ void ACHTrackingBot::OnHealthChanged(UCHHealthComponent* HealthComponent, float 
 	}
 	
 
-
-	UE_LOG(LogTemp, Log, TEXT("Health %s of %s"), *FString::SanitizeFloat(Health), *GetName());
-
 	if (Health <= 0.0f)
 	{
 		SelfDestruct();
@@ -114,8 +141,11 @@ void ACHTrackingBot::SelfDestruct()
 
 	UGameplayStatics::SpawnSoundAtLocation(this, ExplosionSound, GetActorLocation());
 
-	DrawDebugSphere(GetWorld(), GetActorLocation(), ExplosionRadious, 12, FColor::Red, false, 1.0f, 0, 1.0f);
-
+	if (DebugTrackerDrawing > 0)
+	{
+		DrawDebugSphere(GetWorld(), GetActorLocation(), ExplosionRadious, 12, FColor::Red, false, 1.0f, 0, 1.0f);
+	}
+	
 	MeshComp->SetVisibility(false, true);
 	MeshComp->SetSimulatePhysics(false);
 	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -158,7 +188,12 @@ void ACHTrackingBot::Tick(float DeltaTime)
 		{
 			NextPathPoint = GetNexPathPoint();
 
-			DrawDebugString(GetWorld(), GetActorLocation(), "Target Reached!!!");
+			if (DebugTrackerDrawing > 0)
+			{
+				DrawDebugString(GetWorld(), GetActorLocation(), "Target Reached!!!");
+			}
+
+			
 		}
 		else
 		{
@@ -169,7 +204,12 @@ void ACHTrackingBot::Tick(float DeltaTime)
 			DrawDebugDirectionalArrow(GetWorld(), GetActorLocation(), GetActorLocation() + DirectionToTarget, 32, FColor::Red, false, 0.0f, 0, 1.0f);
 		}
 
-		DrawDebugSphere(GetWorld(), NextPathPoint, 20, 12, FColor::Red, false, 4.0f, 1.0f);
+
+		if (DebugTrackerDrawing > 0)
+		{
+			DrawDebugSphere(GetWorld(), NextPathPoint, 20, 12, FColor::Red, false, 4.0f, 1.0f);
+		}
+		
 	}
 
 	
@@ -187,7 +227,7 @@ void ACHTrackingBot::NotifyActorBeginOverlap(AActor* OtherActor)
 
 	ACHCharacter* PlayerPawn = Cast<ACHCharacter>(OtherActor);
 
-	if (PlayerPawn)
+	if (PlayerPawn && !UCHHealthComponent::IsFrendly(OtherActor, this))
 	{
 		if (Role == ROLE_Authority)
 		{
@@ -246,6 +286,11 @@ void ACHTrackingBot::OnRep_PowerLevel()
 
 		MatInst->SetScalarParameterValue("PowerLevelAlpha", Alpha);
 	}
+}
+
+void ACHTrackingBot::RefreshPass()
+{
+	NextPathPoint = GetNexPathPoint();
 }
 
 void ACHTrackingBot::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

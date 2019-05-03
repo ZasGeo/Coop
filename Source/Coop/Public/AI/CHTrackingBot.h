@@ -16,6 +16,21 @@ public:
 	// Sets default values for this pawn's properties
 	ACHTrackingBot();
 
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
+	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+
+	UFUNCTION()
+	void OnCheckNearbyBots();
+
+	UFUNCTION()
+	void OnRep_PowerLevel();
+
+	UFUNCTION()
+	void RefreshPass();
+
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -32,17 +47,8 @@ protected:
 	void DamageSelf();
 
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
-	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
-
-	UFUNCTION()
-	void OnCheckNearbyBots();
-
-	UFUNCTION()
-	void OnRep_PowerLevel();
+	
 
 protected:
 
@@ -101,4 +107,5 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
 	int MaxPowerLevel = 3;
 
+	FTimerHandle TimerHandle_PassTimer;
 };

@@ -32,6 +32,25 @@ void UCHHealthComponent::Heal(float Amount)
 	OnChangeHealth.Broadcast(this, Health, -Amount, nullptr, nullptr, nullptr);
 }
 
+bool UCHHealthComponent::IsFrendly(AActor* ActorA, AActor* ActorB)
+{
+	if (!ActorA || !ActorB)
+	{
+		return true;
+
+	}
+
+	UCHHealthComponent* HealthCompA = Cast<UCHHealthComponent>(ActorA->GetComponentByClass(UCHHealthComponent::StaticClass()));
+	UCHHealthComponent* HealthCompB = Cast<UCHHealthComponent>(ActorB->GetComponentByClass(UCHHealthComponent::StaticClass()));
+
+	if (!HealthCompA || !HealthCompB)
+	{
+		return true;
+	}
+
+	return HealthCompA->Team == HealthCompB->Team;
+}
+
 // Called when the game starts
 void UCHHealthComponent::BeginPlay()
 {
@@ -54,6 +73,11 @@ void UCHHealthComponent::BeginPlay()
 void UCHHealthComponent::OnDamageTaken(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
 {
 	if (Damage <= 0.0f || bIsDead)
+	{
+		return;
+	}
+
+	if (DamageCauser != DamagedActor &&IsFrendly(DamagedActor, DamageCauser))
 	{
 		return;
 	}

@@ -110,6 +110,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	float ReloadTime = 5.0f;
 
+	/*Bullet spread in Degrees*/
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon", meta = (ClampMin = 0.0f))
+	float BulletSpread = 3.0f;
+
 	FTimerHandle Reload_Timer;
 
 

@@ -11,7 +11,7 @@
 #include "Coop.h"
 #include "UnrealNetwork.h"
 
-static int32 DebugWeaponDrawing;
+static int32 DebugWeaponDrawing = 0;
 
 FAutoConsoleVariableRef CVARDebugWeaponDrawing(TEXT("COOP.DebugWeapons"), DebugWeaponDrawing, TEXT("Draw debug lines for weapons"), ECVF_Cheat);
 
@@ -86,6 +86,10 @@ void ACHWeapon::Fire()
 
 		FVector ShotDirection = EyeRotation.Vector();
 
+		float HalfRad = FMath::DegreesToRadians(BulletSpread);
+
+		ShotDirection = FMath::VRandCone(ShotDirection, HalfRad, HalfRad);
+
 		FVector TraceEnd = EyeLocation + (ShotDirection * 10000);
 
 		FCollisionQueryParams QueryParams;
@@ -112,7 +116,7 @@ void ACHWeapon::Fire()
 				ActualDamage *= 4;
 			}
 
-			UGameplayStatics::ApplyPointDamage(HitActor, ActualDamage, ShotDirection, Hit, MyOwner->GetInstigatorController(), this, DamageType);
+			UGameplayStatics::ApplyPointDamage(HitActor, ActualDamage, ShotDirection, Hit, MyOwner->GetInstigatorController(), MyOwner, DamageType);
 			
 			
 			TracePoint = Hit.ImpactPoint;

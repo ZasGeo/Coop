@@ -15,6 +15,12 @@ public:
 	// Sets default values for this character's properties
 	ACHCharacter();
 
+	UFUNCTION(BlueprintCallable, Category = "Player")
+	void StartFire();
+
+	UFUNCTION(BlueprintCallable, Category = "Player")
+	void StopFire();
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -31,9 +37,7 @@ protected:
 
 	void EndZoom();
 
-	void StartFire();
-
-	void StopFire();
+	
 
 	UFUNCTION()
 	void OnHealthChanged(class UCHHealthComponent* HealthComponent, float Health, float DeltaHealth,

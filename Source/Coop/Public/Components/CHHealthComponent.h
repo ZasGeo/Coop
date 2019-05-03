@@ -21,6 +21,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Events")
 	void Heal(float Amount);
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Health")
+	static bool IsFrendly(AActor* ActorA, AActor* ActorB);
+
+	UFUNCTION(BlueprintCallable, Category = "Health")
 	float GetHealth() const 
 	{
 		return Health;
@@ -50,5 +54,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnChangeHealthSugnature OnChangeHealth;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Health")
+	uint8 Team = 255;
 		
+	
 };
